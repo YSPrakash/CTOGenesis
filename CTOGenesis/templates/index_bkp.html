@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- custom css file link  -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <script>
+        function login(event) {
+            event.preventDefault();
+            window.location.href = 'main_bkp.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('login-form').addEventListener('submit', login);
+        });
+    </script>
+</head>
+<body>
+    <div class="login-container">
+        <section id="content">
+            <form id="login-form">
+                <h1>Login Form</h1>
+                <div>
+                    <input type="text" placeholder="Username" required="" id="username" />
+                </div>
+                <div>
+                    <input type="password" placeholder="Password" required="" id="password" />
+                </div>
+                <div>
+                    <input id="login" type="submit" value="Log in" />
+                    <a href="#">Forgot your password?</a>
+                    <a href="#">Register</a>
+                </div>
+            </form>
+            <div class="button">
+                <!-- <a href="#">Download source file</a> -->
+            </div>
+        </section>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
