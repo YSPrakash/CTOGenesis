@@ -1,0 +1,146 @@
+```
+python
+from aws_cdk import (
+    aws_ec2 as ec
+2,
+    aws_elasticloadbalancingv2 as elbv2,
+
+    aws_rds as rds,
+    core
+)
+
+class AwsArchitectureStack(core.Stack):
+
+    def __init__(self,
+ scope: core.Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs
+)
+
+        # Create a VPC with two subnets
+        vpc = ec2.Vpc(self, "Vpc", max_azs=2)
+
+        # Create the Application Tier resources
+        # Create two EC2 instances
+ in an Auto Scaling group
+        app_tier_sg = ec2.SecurityGroup(self, "AppTierSecurityGroup", vpc=vpc, allow_all_outbound=True)
+        app_tier_sg.
+add_ingress_rule(ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(22))
+
+        app_tier_asg = ec2.AutoScalingGroup(self, "AppTierAsg",
+            vpc=vpc,
+
+            instance_type=ec2.InstanceType("t2.micro"),
+            machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
+            key_name="YOUR_KEY_NAME",
+            min_capacity=2
+,
+            max_capacity=2,
+            security_group=app_tier_sg,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_NAT)
+        )
+
+        # Create an Application Load Balancer and configure
+ the target group
+        app_lb = elbv2.ApplicationLoadBalancer(self, "AppLoadBalancer", vpc=vpc, internet_facing=True)
+        app_lb_listener = app_lb.add_listener("Listener", port=80)
+
+        app_tg = elbv
+2.ApplicationTargetGroup(self, "AppTargetGroup",
+            port=80,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.INSTANCE,
+            vpc=vpc
+        )
+
+        app_lb_listener.
+add_targets("AppTargets", port=80, targets=[app_tg])
+        app_tg.add_targets("AppAsgTargets", targets=app_tier_asg)
+
+        # Create the Database Tier resources
+        # Create an RDS instance in a separate subnet
+        db
+_sg = ec2.SecurityGroup(self, "DbSecurityGroup", vpc=vpc, allow_all_outbound=True)
+        db_sg.add_ingress_rule(ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp
+(3306))
+
+        db_instance = rds.DatabaseInstance(self, "DbInstance",
+            engine=rds.DatabaseInstanceEngine.mysql(version=rds.MysqlEngineVersion.MYSQL_8_0),
+            instance_type=ec2.InstanceType("t2
+.micro"),
+            vpc=vpc,
+            security_groups=[db_sg],
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_ISOLATED)
+        )
+
+        # Create the Web Tier resources
+        # Create a NAT
+ Gateway in a separate subnet
+        nat_gateway_subnet = vpc.select_subnets(subnet_type=ec2.SubnetType.PUBLIC)
+
+        nat_gateway = ec2.NatGateway(self, "NatGateway",
+            subnet_selection=nat_gateway_subnet,
+
+            connectivity_type=ec2.NatGatewayConnectivityType.INTERNET,
+            instance_type=ec2.InstanceType("t2.micro"),
+            machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2)
+        )
+
+
+        # Create a Bastion host in the public subnet
+        bastion_host_sg = ec2.SecurityGroup(self, "BastionHostSecurityGroup", vpc=vpc, allow_all_outbound=True)
+        bastion_host_sg.add_ingress_rule(ec
+2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(22))
+
+        bastion_host = ec2.Instance(self, "BastionHost",
+            instance_type=ec2.InstanceType("t2.micro"),
+            
+machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2),
+            key_name="YOUR_KEY_NAME",
+            security_group=bastion_host_sg,
+            vpc_subnets=ec2.SubnetSelection
+(subnet_type=ec2.SubnetType.PUBLIC)
+        )
+
+        # Create a security group for the web tier EC2 instances
+        web_tier_sg = ec2.SecurityGroup(self, "WebTierSecurityGroup", vpc=vpc, allow_all_outbound=True
+)
+        web_tier_sg.add_ingress_rule(ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(22))
+
+        # Create an Auto Scaling group for the web tier
+        web_tier_asg = ec
+2.AutoScalingGroup(self, "WebTierAsg",
+            vpc=vpc,
+            instance_type=ec2.InstanceType("t2.micro"),
+            machine_image=ec2.AmazonLinuxImage(generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_
+2),
+            key_name="YOUR_KEY_NAME",
+            min_capacity=2,
+            max_capacity=2,
+            security_group=web_tier_sg,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType
+.PRIVATE_WITH_NAT)
+        )
+
+        # Create a Load Balancer for the web tier
+        web_lb = elbv2.ApplicationLoadBalancer(self, "WebLoadBalancer", vpc=vpc, internet_facing=True)
+        web_lb_listener = web_lb.
+add_listener("Listener", port=80)
+
+        web_tg = elbv2.ApplicationTargetGroup(self, "WebTargetGroup",
+            port=80,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType
+.INSTANCE,
+            vpc=vpc
+        )
+
+        web_lb_listener.add_targets("WebTargets", port=80, targets=[web_tg])
+        web_tg.add_targets("WebAsgTargets", targets=web_tier_asg)
+
+        #
+ Add outputs for the load balancer DNS names
+        core.CfnOutput(self, "AppLoadBalancerDns", value=app_lb.load_balancer_dns_name)
+        core.CfnOutput(self, "WebLoadBalancerDns", value=web_lb.load_balancer_dns_
+name)
+
+```

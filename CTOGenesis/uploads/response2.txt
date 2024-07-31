@@ -1,0 +1,40 @@
+This
+ architecture diagram depicts a typical AWS deployment with a web tier, application tier, and
+ database tier. 
+
+**Web Tier**
+
+* The web tier utilizes an
+ auto-scaling group behind a public-facing load balancer. 
+* This allows for high availability and scalability of the web application. 
+* Traffic is
+ routed through a NAT gateway to provide secure access to internal resources. 
+* The bastion host acts as a jump-box for administrators to manage instances.
+
+
+**Application Tier**
+
+* The application tier is also based on an auto-scaling group and a load balancer. 
+* This tier is responsible for processing the application logic. 
+* It is separated from the web tier for security
+ and scalability purposes.
+
+**Database Tier**
+
+* The database tier is a single RDS instance within its own private subnet. 
+* This tier is responsible for storing application data.
+
+**Security and Management**
+
+* The security groups
+ associated with each instance restrict incoming and outgoing traffic, ensuring a secure environment. 
+* This architecture follows the principle of least privilege, granting only necessary access to each resource.
+
+**Key Takeaways**
+
+* This architecture emphasizes separation of concerns by dividing the application into tiers.
+* It leverages AWS services like auto
+-scaling groups and load balancers for high availability and scalability.
+* Security best practices are employed through the use of security groups and private subnets.
+* The architecture is flexible and can be easily scaled up or down based on application requirements.
+
